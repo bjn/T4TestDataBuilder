@@ -1,5 +1,5 @@
 #generade files
-out.cs
+scripts/*.cs
 
 #OS junk files
 [Tt]humbs.db
