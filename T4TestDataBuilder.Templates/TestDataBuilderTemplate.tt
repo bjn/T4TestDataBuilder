@@ -3,7 +3,6 @@
 <#@ Assembly Name="System.Core.dll" #>
 <#@ Assembly Name="System.Windows.Forms.dll" #>
 <#@ Assembly Name="System.Data.Entity.Design.dll" #>
-<#@ Assembly Name="$(SolutionDir)\T4TestDataBuilder.Entities\bin\debug\T4TestDataBuilder.Entities.dll" #>
 <#@ import namespace="System" #>
 <#@ import namespace="System.IO" #>
 <#@ import namespace="System.Diagnostics" #>
@@ -16,19 +15,21 @@
 <#@ import namespace="System.CodeDom" #>
 <#@ import namespace="System.CodeDom.Compiler" #>
 <#@ import namespace="System.Diagnostics" #>
-<#@ import namespace="T4TestDataBuilder.Entities" #>
-<#@ import namespace="T4TestDataBuilder.Entities.Scenario1" #>
+
+<#
+	string inNamespace = this.Host.ResolveParameterValue("","","inNamespace");
+	string outNamespace = this.Host.ResolveParameterValue("","","outNamespace");
+#>
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-namespace TestDataBuilder {
+namespace <#=outNamespace#> {
 
 <#
-  
-   IEnumerable<TypeInformation> types = GetTypes();
+   IEnumerable<TypeInformation> types = GetTypes(inNamespace);
 
    foreach(TypeInformation type in types) {
 #>
@@ -214,36 +215,14 @@ namespace TestDataBuilder {
 			return writer.ToString();
 		}
 
-string GetCurrentDirectory()
-{
-	string executingDirectoryName = "";
-	string stackTraceFileName = new StackTrace(true).GetFrame(0).GetFileName();
-	if (String.IsNullOrEmpty(stackTraceFileName))
-	{
-		throw new ArgumentException("No value was specified for the 'directoryName' configuration parameter" +
-			", and we could not figure out the file name from the stack trace (most likely because of running " +
-			"the template with debug='False' specified in the <\u0023@ template \u0023> directive.");
-	}
-	else
-	{		
-		executingDirectoryName = Path.GetDirectoryName(stackTraceFileName);
-	}	
-	return executingDirectoryName;
-}
 static string ToLowerStart(string name) {
 	return string.Format("{0}{1}",name.Substring(0,1).ToLower(),name.Substring(1));
 }
 
-IEnumerable<TypeInformation> GetTypes() {
-		// Get the types from the input files
-		//Assembly common = Assembly.LoadFile(GetCurrentDirectory()+@"\Cerdo.CIP.Common.dll");
-		//Assembly assembly = Assembly.LoadFile(GetCurrentDirectory()+@"\Cerdo.CNA.MPScraper.Service.Entities.dll");
-		//Assembly assembly = Assembly.LoadFile(GetCurrentDirectory()+@"\T4TestDataBuilder.Tests.dll");
-		var types = (from type in typeof(Car).Assembly.GetTypes()
-				select new TypeInformation (type)).ToList();
-
-		//types.AddRange((from type in common.GetTypes() where type.Name == "RequestHeader" || type.Name == "ResponseHeader" select new TypeInformation(type)));
-
-		return types;
+IEnumerable<TypeInformation> GetTypes(string namespaceFilter) {
+	return from assembly in AppDomain.CurrentDomain.GetAssemblies()
+		from type in assembly.GetTypes()
+			where type.Namespace != null && type.Namespace.StartsWith(namespaceFilter)
+				select new TypeInformation (type);
 }
 #>
